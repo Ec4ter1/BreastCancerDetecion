@@ -8,14 +8,9 @@ def split_dataset(merged_csv, output_dir, test_size=0.15, val_size=0.15, random_
     Împarte dataset-ul în train/val/test păstrând distribuția
     """
     os.makedirs(output_dir, exist_ok=True)
-
     df = pd.read_csv(merged_csv)
-    print(f"Dataset total: {len(df)} înregistrări")
     if 'BENIGN_WITHOUT_CALLBACK' in df['pathology'].values:
-        print("\n⚠ Găsit BENIGN_WITHOUT_CALLBACK - se unifică cu BENIGN")
         df['pathology'] = df['pathology'].replace('BENIGN_WITHOUT_CALLBACK', 'BENIGN')
-    print("\nDistribuție pathology:")
-    print(df['pathology'].value_counts())
 
     train_val, test = train_test_split(
         df,
@@ -37,19 +32,6 @@ def split_dataset(merged_csv, output_dir, test_size=0.15, val_size=0.15, random_
     train.to_csv(train_csv, index=False)
     val.to_csv(val_csv, index=False)
     test.to_csv(test_csv, index=False)
-
-    print("\n" + "=" * 80)
-    print("SPLIT FINALIZAT")
-    print("=" * 80)
-    print(f"Train: {len(train)} ({100 * len(train) / len(df):.1f}%)")
-    print(f"  BENIGN: {(train['pathology'] == 'BENIGN').sum()}")
-    print(f"  MALIGNANT: {(train['pathology'] == 'MALIGNANT').sum()}")
-    print(f"\nVal: {len(val)} ({100 * len(val) / len(df):.1f}%)")
-    print(f"  BENIGN: {(val['pathology'] == 'BENIGN').sum()}")
-    print(f"  MALIGNANT: {(val['pathology'] == 'MALIGNANT').sum()}")
-    print(f"\nTest: {len(test)} ({100 * len(test) / len(df):.1f}%)")
-    print(f"  BENIGN: {(test['pathology'] == 'BENIGN').sum()}")
-    print(f"  MALIGNANT: {(test['pathology'] == 'MALIGNANT').sum()}")
     return train_csv, val_csv, test_csv
 
 
