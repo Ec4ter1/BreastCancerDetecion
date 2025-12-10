@@ -30,3 +30,36 @@ class TabularNet(nn.Module):
         else:
             x = numeric
         return self.net(x)
+
+class MultiModalModel(nn.Module):
+    def __init__(self, num_numeric, cat_cardinalities=None, image_backbone="resnet50", pretrained=True, fusion_hidden=256):
+        super().__init__()
+        # image branch
+        if image_backbone == "resnet50":
+            self.backbone = models.resnet50(pretrained=pretrained)
+            in_feats = self.backbone.fc.in_features
+            # replace fc
+            self.backbone.fc = nn.Identity()
+        else:
+            raise NotImplementedError
+        self.tabular = TabularNet(num_numeric=num_numeric, cat_cardinalities=cat_cardinalities, hidden=128)
+        tab_out = 64
+        self.img_proj = nn.Linear(in_feats, fusion_hidden)
+        self.tab_proj = nn.Linear(64, fusion_hidden)
+        self.classifier = nn.Sequential(
+            nn.ReLU(),
+            nn.Dropout(0.4),
+            nn.Linear(2*fusion_hidden, fusion_hidden),
+            nn.ReLU(),
+            nn.Dropout(0.4),
+            nn.Linear(fusion_hidden, 1)
+        )
+
+    def forward(self, image, numeric, categorical):
+        img_feats = self.backbone(image)
+        img_p = self.img_proj(img_feats)
+        tab_feats = self.tabular(numeric, categorical)
+        tab_p = self.tab_proj(tab_feats)
+        fused = torch.cat([img_p, tab_p], dim=1)
+        out = self.classifier(fused)
+        return out.squeeze(1)  # logits
